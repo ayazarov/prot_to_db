@@ -1,0 +1,12 @@
+bd_parse.py
+
+есть файл БД, в нем столбцы. структура всегда определенная.
+последний столбец имеет данные, которые могут меняться.
+мне бы распарсить данные из этого столбца, чтобы они разместились каждая в своем столбце. при этом эти данные могут отличаться.
+например, одна строка такая  / dw_ppm=17.5 lna_gain=3.14 pwr_lna_low=-92.29 rtc_dw_ppm=-16.4 rtc_anc_ppm=1.1 Vcc=3.09 Vbat=3.92 leak_dU=0.93 leak_dt=2.99 pres_Pa=-60 pres_ofs_Pa=14 profile="Sig316 TdoaTag"
+другая такая  / dw_ppm=22.0 lna_gain=2.71 pwr_lna_low=-91.71 rtc_dw_ppm=-28.9 rtc_anc_ppm=-6.9 Vcc=3.09 Vbat=nan leak_dU=0.95 leak_dt=2.96 pres_Pa=-983 pres_ofs_Pa=-17 profile="Sig316 TdoaTag"
+третья такая  / dw_ppm=nan lna_gain=nan pwr_lna_low=nan rtc_dw_ppm=nan rtc_anc_ppm=nan Vcc=nan Vbat=nan profile=""  ! skipUWB skipCLOCK skipCHARGE skipLEAK skipBARcalib PresRefManual
+или вообще такая  / .
+
+исходник в source.db
+скрипт нужен на питоне, сохранять результат нужно так: создается новая БД с именем 'target.db', в нее добавляются все данные из оригинальной БД source.db кроме последнего столбца. а последний столбец парсится и добавляются новые столбцы
