@@ -99,7 +99,7 @@ def analyze_selected_hwid(conn, hwid, hwid_count):
                     else:
                         print(f"{table}: Количество = {count}, Минимум/Максимум не определены.")
 
-                plot_histograms(data)
+                plot_histograms(data, hwid, chosen_column)
             else:
                 print(f"Некорректный выбор столбца. Доступные столбцы: {', '.join(common_columns)}")
         else:
@@ -179,26 +179,26 @@ def analyze_column_data(conn, column_name, mfg_numbers, hwid):
     return results, stats
 
 
-def plot_histograms(data):
+def plot_histograms(data, hwid, column_name):
     table_data = {}
-    table_counts = {}  # Для хранения количества строк для каждой таблицы
+    table_counts = {}
 
     for entry in data:
         table = entry['table']
         value = entry['value']
         if table not in table_data:
             table_data[table] = []
-            table_counts[table] = 0  # Инициализация счетчика для новой таблицы
+            table_counts[table] = 0
         table_data[table].append(value)
-        table_counts[table] += 1  # Увеличиваем счетчик для данной таблицы
+        table_counts[table] += 1
 
     # Создание одного графика для всех таблиц
     plt.figure(figsize=(10, 5))
     for table, values in table_data.items():
         plt.hist(values, bins=30, alpha=0.5, label=f"{table} (Всего: {table_counts[table]})")
 
-    plt.title('Гистограммы для выбранных MFG')
-    plt.xlabel('Значения')
+    plt.title(f'Гистограммы для {hwid} по производствам {", ".join(table_data.keys())}')
+    plt.xlabel(f'{column_name}')
     plt.ylabel('Частота')
     plt.grid(axis='y', alpha=0.75)
     plt.axhline(0, color='black', linewidth=0.8)
