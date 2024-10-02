@@ -4,40 +4,13 @@ import matplotlib.pyplot as plt
 db_name = "03 only passed devices (cleared and separated).db"  # Задайте имя вашей базы данных здесь
 
 
-def remove_leading_spaces(conn):
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = cursor.fetchall()
-
-    for table in tables:
-        table_name = table[0]
-        print(f"Обрабатываем таблицу: {table_name}")
-
-        cursor.execute(f"PRAGMA table_info({table_name});")
-        columns = cursor.fetchall()
-        column_names = [col[1] for col in columns]
-
-        for column in column_names:
-            cursor.execute(f"SELECT rowid, {column} FROM {table_name};")
-            rows = cursor.fetchall()
-
-            for row in rows:
-                rowid, value = row
-                if isinstance(value, str):
-                    new_value = value.lstrip()
-                    cursor.execute(f"UPDATE {table_name} SET {column} = ? WHERE rowid = ?;", (new_value, rowid))
-
-    conn.commit()
-    print("Удаление пробелов завершено.")
-
-
 def collect_unique_hwid(conn):
     cursor = conn.cursor()
     hwid_count = {}
 
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = cursor.fetchall()
+    print(f'список доступных таблиц в БД: {tables}')
 
     for table in tables:
         table_name = table[0]
@@ -195,7 +168,7 @@ def plot_histograms(data, hwid, column_name):
     # Создание одного графика для всех таблиц
     plt.figure(figsize=(10, 5))
     for table, values in table_data.items():
-        plt.hist(values, bins=30, alpha=0.5, label=f"{table} (Всего: {table_counts[table]})")
+        plt.hist(values, bins=50, alpha=0.5, label=f"{table} (Всего: {table_counts[table]})")
 
     plt.title(f'Гистограммы для {hwid} по производствам {", ".join(table_data.keys())}')
     plt.xlabel(f'{column_name}')
@@ -209,7 +182,6 @@ def plot_histograms(data, hwid, column_name):
 def main():
     try:
         conn = sqlite3.connect(db_name)
-        remove_leading_spaces(conn)
 
         hwid_count = collect_unique_hwid(conn)
         sorted_hwid_count = display_hwid_counts(hwid_count)
