@@ -18,8 +18,8 @@ def parse_last_column(last_column):
 
 def main():
     # Подключение к исходной БД
-    source_db = 'source.db'
-    target_db = 'target.db'
+    source_db = '01 raw prots.db'
+    target_db = '02 raw prots with separated test results.db'
 
     # Чтение данных из исходной БД
     conn_source = sqlite3.connect(source_db)

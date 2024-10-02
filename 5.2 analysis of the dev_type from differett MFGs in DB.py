@@ -1,7 +1,7 @@
 import sqlite3
 import matplotlib.pyplot as plt
 
-db_name = "tgt_cleared.db"  # Задайте имя вашей базы данных здесь
+db_name = "03 only passed devices (cleared and separated).db"  # Задайте имя вашей базы данных здесь
 
 
 def remove_leading_spaces(conn):
@@ -71,7 +71,7 @@ def analyze_selected_hwid(conn, hwid, hwid_count):
     for table, count in counts.items():
         print(f"{table} - {count}")
 
-    mfg_numbers = input("Введите номера MFG (например, 21, 27), разделенные запятой: ").split(',')
+    mfg_numbers = input("Введите номера MFG, разделенные запятой (например, 21, 27): ").split(',')
     mfg_numbers = [mfg.strip() for mfg in mfg_numbers]
 
     valid_mfg = [table.replace("MFG_", "") for table in counts.keys()]

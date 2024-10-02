@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib.ticker import MaxNLocator
 
 # Подключаемся к базе данных
-conn = sqlite3.connect('target_separated.db')
+conn = sqlite3.connect('03 only passed devices (cleared and separated).db')
 
 # Загружаем данные из таблицы UwbTag
 query = 'SELECT dw_ppm, rtc_dw_ppm FROM UwbTag'

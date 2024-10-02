@@ -3,8 +3,8 @@ import shutil
 import re
 
 # Шаг 0: Копирование базы данных
-source_db = 'target.db'
-destination_db = 'tgt_cleared.db'
+source_db = '02 raw prots with separated test results.db'
+destination_db = '03 only passed devices (cleared and separated).db'
 
 # Копируем файл базы данных
 shutil.copyfile(source_db, destination_db)
@@ -121,7 +121,8 @@ print(f"Общее количество строк: {total_rows}")
 for table in tables:
     table_name = table[0]
     if re.match(r'MFG_\d{1,3}$', table_name):
-        cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED', 'TESTED')")
+        # cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED', 'TESTED')")
+        cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED')")
         connection.commit()  # Сохраняем изменения после удаления
 
 # Закрываем соединение с БД

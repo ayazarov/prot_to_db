@@ -2,8 +2,8 @@ import sqlite3
 import shutil
 
 # Шаг 0: Копирование базы данных
-source_db = 'target.db'
-destination_db = 'target_cleared.db'
+source_db = '02 raw prots with separated test results.db'
+destination_db = '03 only passed devices (tgt_cleared).db'
 
 # Копируем файл базы данных
 shutil.copyfile(source_db, destination_db)
@@ -129,7 +129,7 @@ print(f"Обработка дубликатов завершена. Количе
 '''-------=================----------'''
 
 # Подключение к базе данных
-conn = sqlite3.connect('target_cleared.db')
+conn = sqlite3.connect(destination_db)
 cursor = conn.cursor()
 
 # 1. Удаление пробелов в начале текста в каждой ячейке построчно
@@ -153,10 +153,13 @@ total_rows = cursor.fetchone()[0]
 print(f"Общее количество строк: {total_rows}")
 
 # Удаление строк, где test_status не PASSED или TESTED
-cursor.execute(f"SELECT COUNT(*) FROM {table_name} WHERE test_status NOT IN ('PASSED', 'TESTED')")
+# cursor.execute(f"SELECT COUNT(*) FROM {table_name} WHERE test_status NOT IN ('PASSED', 'TESTED')")
+# Удаление строк, где test_status не PASSED
+cursor.execute(f"SELECT COUNT(*) FROM {table_name} WHERE test_status NOT IN ('PASSED')")
 rows_to_delete = cursor.fetchone()[0]
 
-cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED', 'TESTED')")
+# cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED', 'TESTED')")
+cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED')")
 conn.commit()  # Сохраняем изменения
 
 print(f"Количество удаленных строк: {rows_to_delete}")

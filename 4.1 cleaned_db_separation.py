@@ -1,7 +1,7 @@
 import sqlite3
 
 # Подключаемся к исходной базе данных
-source_db = sqlite3.connect('target_cleared.db')
+source_db = sqlite3.connect('03 only passed devices (tgt_cleared).db')
 source_cursor = source_db.cursor()
 
 # Задаем имя таблицы
@@ -24,7 +24,7 @@ print("\nНазвания столбцов оригинальной таблиц
 print(columns)
 
 # Создаем новую базу данных
-target_db = sqlite3.connect('target_separated.db')
+target_db = sqlite3.connect('04 only passed devices (tgt_cleared_and_separated.db')
 target_cursor = target_db.cursor()
 
 # Создаем таблицы для каждого уникального dev_type
