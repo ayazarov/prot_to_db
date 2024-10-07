@@ -5,7 +5,7 @@ from datetime import datetime
 
 # Шаг 0: Копирование базы данных
 source_db = '02 raw prots with separated test results.db'
-destination_db = '03 only passed devices (cleared and separated).db'
+destination_db = '03 passed-tested devices (cleared and separated).db'
 
 # Копируем файл базы данных
 shutil.copyfile(source_db, destination_db)
@@ -35,56 +35,20 @@ def clean_table(cursor, table_name):
     # Шаг 2: Обработка дубликатов по CPU_ID
     for cpu_id, group in duplicates.items():
         if len(group) > 1:  # Есть дубликаты
-            sn_set = {row[1] for row in group}
-            if len(sn_set) > 1:
-                message = f"Дубликаты с CPU_ID {cpu_id} имеют разные SN: {sn_set}"
-                print(message)
-                for row in group:
-                    cursor.execute(f"UPDATE {table_name} SET duplicates = ? WHERE ROWID = ?",
-                                   (message, row[4]))
-                continue  # Переход к следующей группе
+            # Сначала находим самое позднее вхождение
+            latest_row = max(group, key=lambda x: (datetime.strptime(x[2], "%d.%m.%Y"), x[3]))
+            latest_row_id = latest_row[4]
 
-            # Если SN одинаковые, продолжаем сравнение по date
-            latest_row = group[0]
-            latest_row_date = datetime.strptime(latest_row[2], "%d.%m.%Y")
-            latest_row_time = latest_row[3]
-
-            for row in group[1:]:
-                current_row_date = datetime.strptime(row[2], "%d.%m.%Y")
-                current_row_time = row[3]
-
-                # Сравниваем date
-                if current_row_date != latest_row_date:
-                    if current_row_date < latest_row_date:  # Более ранняя дата
-                        print(f"Удалена строка с ROWID {row[4]}: {row} (дата {row[2]} старше, чем {latest_row[2]})")
-                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (row[4],))
-                        deleted_rows_count += 1
-                    else:
-                        print(
-                            f"Удалена строка с ROWID {latest_row[4]}: {latest_row} (дата {latest_row[2]} старше, чем {row[2]})")
-                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (latest_row[4],))
-                        deleted_rows_count += 1
-                        latest_row = row  # Обновляем latest_row
-                        latest_row_date = current_row_date  # Обновляем дату
-                        latest_row_time = current_row_time  # Обновляем время
-
-                # Сравниваем time, если date одинаковые
-                elif current_row_time != latest_row_time:
-                    if current_row_time < latest_row_time:  # Более раннее время
-                        print(f"Удалена строка с ROWID {row[4]}: {row} (время {row[3]} старше, чем {latest_row[3]})")
-                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (row[4],))
-                        deleted_rows_count += 1
-                    else:
-                        print(
-                            f"Удалена строка с ROWID {latest_row[4]}: {latest_row} (время {latest_row[3]} старше, чем {row[3]})")
-                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (latest_row[4],))
-                        deleted_rows_count += 1
-                        latest_row = row  # Обновляем latest_row
-                        latest_row_date = current_row_date  # Обновляем дату
-                        latest_row_time = current_row_time  # Обновляем время
+            # Удаляем все строки, кроме самой поздней
+            for row in group:
+                if row[4] != latest_row_id:  # Не удаляем самую позднюю строку
+                    print(f"Удалена строка с ROWID {row[4]}: {row} (оставлена строка с ROWID {latest_row_id})")
+                    cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (row[4],))
+                    deleted_rows_count += 1
 
     # Сохраняем изменения
     return deleted_rows_count
+
 
 # Подключаемся к новой базе данных
 connection = sqlite3.connect(destination_db)

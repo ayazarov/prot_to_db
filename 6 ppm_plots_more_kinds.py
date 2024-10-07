@@ -5,11 +5,14 @@ import seaborn as sns
 import numpy as np
 
 # Подключаемся к базе данных
-conn = sqlite3.connect('target_separated.db')
+conn = sqlite3.connect('04 passed only devices (cleared and separated).db')
 
-# Загружаем данные из таблицы UwbTag
-query = 'SELECT dw_ppm, rtc_dw_ppm FROM UwbTag'
-df = pd.read_sql(query, conn)
+# Определяем значение HWID, по которому нужно фильтровать
+hwid_value = 'AC7-POE'
+
+# Загружаем данные из таблицы MFG_27 с фильтрацией по HWID
+query = f"SELECT dw_ppm, rtc_dw_ppm FROM MFG_27 WHERE HWID = ?"
+df = pd.read_sql(query, conn, params=(hwid_value,))
 
 # Закрываем соединение
 conn.close()

@@ -1,7 +1,7 @@
 import sqlite3
 import matplotlib.pyplot as plt
 
-db_name = "03 only passed devices (cleared and separated).db"  # Задайте имя вашей базы данных здесь
+db_name = "03 passed-tested devices (cleared and separated).db"  # Задайте имя вашей базы данных здесь
 
 
 def collect_unique_hwid(conn):
@@ -53,37 +53,33 @@ def analyze_selected_hwid(conn, hwid, hwid_count):
     if incorrect_mfg:
         print(f"Некорректные номера MFG: {', '.join(incorrect_mfg)}. Попробуйте снова.")
     else:
-        print(f"Выбраны MFG: {', '.join(mfg_numbers)}. Будет произведен анализ HWID: {hwid} из выбранных MFG.")
+        print(f"Выбраны MFG: {', '.join(mfg_numbers)}. Будет произведен анализ HWID: {hwid} из выбранных производств.")
 
-        common_columns, unique_columns = get_columns_info(conn, counts, mfg_numbers)
+        common_columns = get_columns_info(conn, counts, mfg_numbers)
+        columns_display = '\n'.join(f"- {column}" for column in common_columns)
+        chosen_column = input(f"\nВыберите один из столбцов для анализа:\n{columns_display}\nВведите имя столбца: ")
+        if chosen_column in common_columns:
+            data, stats = analyze_column_data(conn, chosen_column, mfg_numbers, hwid)  # Передаем hwid
+            print("\nДанные для построения гистограммы:")
+            for entry in data:
+                print(f"Таблица: {entry['table']}, Значение: {entry['value']}")
 
-        if common_columns:
-            chosen_column = input(f"\nВыберите один из общих столбцов для анализа ({', '.join(common_columns)}): ")
-            if chosen_column in common_columns:
-                data, stats = analyze_column_data(conn, chosen_column, mfg_numbers, hwid)  # Передаем hwid
-                print("\nДанные для построения гистограммы:")
-                for entry in data:
-                    print(f"Таблица: {entry['table']}, Значение: {entry['value']}")
+            print("\nСтатистика по данным:")
+            for table, (count, min_val, max_val) in stats.items():
+                if min_val is not None and max_val is not None:
+                    print(f"{table}: Количество = {count}, Минимум = {min_val}, Максимум = {max_val}")
+                else:
+                    print(f"{table}: Количество = {count}, Минимум/Максимум не определены.")
 
-                print("\nСтатистика по данным:")
-                for table, (count, min_val, max_val) in stats.items():
-                    if min_val is not None and max_val is not None:
-                        print(f"{table}: Количество = {count}, Минимум = {min_val}, Максимум = {max_val}")
-                    else:
-                        print(f"{table}: Количество = {count}, Минимум/Максимум не определены.")
-
-                plot_histograms(data, hwid, chosen_column)
-            else:
-                print(f"Некорректный выбор столбца. Доступные столбцы: {', '.join(common_columns)}")
+            plot_histograms(data, hwid, chosen_column)
         else:
-            print("Нет общих столбцов для анализа.")
+            print(f"Некорректный выбор столбца. Доступные столбцы: {', '.join(common_columns)}")
 
 
 def get_columns_info(conn, counts, mfg_numbers):
     excluded_columns = {"id", "date", "time", "dev_type", "HWID", "SN", "persBlock_checksum", "CPU_ID", "test_status",
                         "test_result"}
     common_columns = None
-    unique_columns = {}
 
     for mfg in mfg_numbers:
         table_name = f"MFG_{mfg}"
@@ -98,25 +94,7 @@ def get_columns_info(conn, counts, mfg_numbers):
             else:
                 common_columns &= column_names
 
-            unique_columns[table_name] = column_names
-
-    for table, columns in unique_columns.items():
-        unique_columns[table] = columns - common_columns
-
-    print("\nОбщие столбцы:")
-    if common_columns:
-        print(", ".join(common_columns))
-    else:
-        print("Нет общих столбцов.")
-
-    print("\nУникальные столбцы:")
-    for table, columns in unique_columns.items():
-        if columns:
-            print(f"{table}: {', '.join(columns)}")
-        else:
-            print(f"{table}: Нет уникальных столбцов.")
-
-    return common_columns, unique_columns
+    return common_columns
 
 
 def analyze_column_data(conn, column_name, mfg_numbers, hwid):
@@ -168,11 +146,16 @@ def plot_histograms(data, hwid, column_name):
     # Создание одного графика для всех таблиц
     plt.figure(figsize=(10, 5))
     for table, values in table_data.items():
-        plt.hist(values, bins=50, alpha=0.5, label=f"{table} (Всего: {table_counts[table]})")
+        plt.hist(values, bins=50, alpha=0.5, label=f"{table} (Всего: {table_counts[table]})", density=True)
 
     plt.title(f'Гистограммы для {hwid} по производствам {", ".join(table_data.keys())}')
     plt.xlabel(f'{column_name}')
-    plt.ylabel('Частота')
+
+    # Обезличиваем ось Y
+    plt.ylabel('')  # Убираем подпись оси Y
+    plt.yticks([])  # Убираем метки на оси Y
+
+    # plt.ylabel('Частота')
     plt.grid(axis='y', alpha=0.75)
     plt.axhline(0, color='black', linewidth=0.8)
     plt.legend()
