@@ -1,6 +1,7 @@
 import sqlite3
 import shutil
 import re
+from datetime import datetime
 
 # Шаг 0: Копирование базы данных
 source_db = '02 raw prots with separated test results.db'
@@ -45,28 +46,42 @@ def clean_table(cursor, table_name):
 
             # Если SN одинаковые, продолжаем сравнение по date
             latest_row = group[0]
-            for row in group[1:]:
-                if row[2] != latest_row[2]:  # Сравниваем date
-                    if row[2] > latest_row[2]:  # Более поздняя дата
-                        print(f"Удалена строка с ROWID {latest_row[4]}: {latest_row}")
-                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (latest_row[4],))
-                        deleted_rows_count += 1
-                        latest_row = row
-                    else:
-                        print(f"Удалена строка с ROWID {row[4]}: {row}")
-                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (row[4],))
-                        deleted_rows_count += 1
+            latest_row_date = datetime.strptime(latest_row[2], "%d.%m.%Y")
+            latest_row_time = latest_row[3]
 
-                elif row[3] != latest_row[3]:  # Сравниваем time, если date одинаковые
-                    if row[3] > latest_row[3]:  # Более позднее время
-                        print(f"Удалена строка с ROWID {latest_row[4]}: {latest_row}")
-                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (latest_row[4],))
-                        deleted_rows_count += 1
-                        latest_row = row
-                    else:
-                        print(f"Удалена строка с ROWID {row[4]}: {row}")
+            for row in group[1:]:
+                current_row_date = datetime.strptime(row[2], "%d.%m.%Y")
+                current_row_time = row[3]
+
+                # Сравниваем date
+                if current_row_date != latest_row_date:
+                    if current_row_date < latest_row_date:  # Более ранняя дата
+                        print(f"Удалена строка с ROWID {row[4]}: {row} (дата {row[2]} старше, чем {latest_row[2]})")
                         cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (row[4],))
                         deleted_rows_count += 1
+                    else:
+                        print(
+                            f"Удалена строка с ROWID {latest_row[4]}: {latest_row} (дата {latest_row[2]} старше, чем {row[2]})")
+                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (latest_row[4],))
+                        deleted_rows_count += 1
+                        latest_row = row  # Обновляем latest_row
+                        latest_row_date = current_row_date  # Обновляем дату
+                        latest_row_time = current_row_time  # Обновляем время
+
+                # Сравниваем time, если date одинаковые
+                elif current_row_time != latest_row_time:
+                    if current_row_time < latest_row_time:  # Более раннее время
+                        print(f"Удалена строка с ROWID {row[4]}: {row} (время {row[3]} старше, чем {latest_row[3]})")
+                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (row[4],))
+                        deleted_rows_count += 1
+                    else:
+                        print(
+                            f"Удалена строка с ROWID {latest_row[4]}: {latest_row} (время {latest_row[3]} старше, чем {row[3]})")
+                        cursor.execute(f"DELETE FROM {table_name} WHERE ROWID = ?", (latest_row[4],))
+                        deleted_rows_count += 1
+                        latest_row = row  # Обновляем latest_row
+                        latest_row_date = current_row_date  # Обновляем дату
+                        latest_row_time = current_row_time  # Обновляем время
 
     # Сохраняем изменения
     return deleted_rows_count
@@ -121,11 +136,11 @@ print(f"Общее количество строк: {total_rows}")
 for table in tables:
     table_name = table[0]
     if re.match(r'MFG_\d{1,3}$', table_name):
-        # cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED', 'TESTED')")
-        cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED')")
+        cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED', 'TESTED')")
+        # cursor.execute(f"DELETE FROM {table_name} WHERE test_status NOT IN ('PASSED')")
         connection.commit()  # Сохраняем изменения после удаления
 
 # Закрываем соединение с БД
 connection.close()
 
-print(f"Обработка дубликатов завершена. Всего удаленных строк: {total_deleted_rows}")
+print(f"Обработка завершена. Всего удаленных строк: {total_deleted_rows}")
