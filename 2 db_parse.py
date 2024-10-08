@@ -11,8 +11,8 @@ template_test_summary_columns = [
     # "pwr_lna_low",
     "rtc_dw_ppm",
     "rtc_anc_ppm",
-    "rtc_ppm",
-    "rtc_tot_ppm",
+    # "rtc_ppm", это тоже, что и rtc_dw_ppm в старых логах
+    # "rtc_tot_ppm", это тоже, что и rtc_anc_ppm в старых логах
     # "Vin",
     # "Vcc",
     # "Vbat",
@@ -62,10 +62,11 @@ def parse_test_summary(test_summary):
         cleaned_summary = parts[0].strip()  # Оставляем только первую часть
 
     # далее костыли для интерпретации некоторых данных, которые в разное время записывались в *.prot по-разному
-    # Проверка наличия записи "leak_dU/dt" и его обработка
-    leak_pattern = r'(?<!\w)(leak_dU/dt=)\s*([^@]+?)(?=\s+\w+\s*=|\s*$)'
-    leak_match = re.search(leak_pattern, cleaned_summary)
-
+    # проверка наличия записи "leak_dU/dt" и его обработка
+    # start пока отключено, т.к. leak_dU/dt временно не нужно
+    #leak_pattern = r'(?<!\w)(leak_dU/dt=)\s*([^@]+?)(?=\s+\w+\s*=|\s*$)'
+    #leak_match = re.search(leak_pattern, cleaned_summary)
+    """
     if leak_match:
         key, values = leak_match.groups()
         # Разделение значений
@@ -75,17 +76,33 @@ def parse_test_summary(test_summary):
             parsed_data['leak_dt'] = leak_values[1].strip()
         # Удаление записи "leak_dU/dt" из cleaned_summary
         cleaned_summary = re.sub(leak_pattern, '', cleaned_summary).strip()
+    """
+    # end пока отключено, т.к. leak_dU/dt временно не нужно
 
     # Разбитие строки на части, основываясь на ключах из template_test_summary_columns
     for column in template_test_summary_columns:
         # Шаблон для поиска точного совпадения ключа и его значения
+        # этот pattern был до объединения rtc_ppm = rtc_dw_ppm, rtc_tot_ppm = rtc_anc_ppm
+        # pattern = rf'(?<!\w)({re.escape(column)}=)([^@]+?)(?=\s+\w+\s*=|\s*$)'
+        # это новый pattern
         pattern = rf'(?<!\w)({re.escape(column)}=)([^@]+?)(?=\s+\w+\s*=|\s*$)'
         match = re.search(pattern, cleaned_summary)
 
+        ''' до объединения rtc_ppm = rtc_dw_ppm, rtc_tot_ppm = rtc_anc_ppm
         if match:
             key, value = match.groups()
             # Удаление лишних пробелов и сохранение значений
             parsed_data[column] = value.strip()
+        '''
+        if match:
+            key, value = match.groups()
+            value = value.strip()
+            if column == "rtc_dw_ppm":              # перенаправление rtc_ppm
+                parsed_data['rtc_dw_ppm'] = value
+            elif column == "rtc_anc_ppm":           # перенаправление rtc_tot_ppm
+                parsed_data['rtc_anc_ppm'] = value
+            else:
+                parsed_data[column] = value
 
     return parsed_data
 
